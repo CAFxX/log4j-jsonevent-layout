@@ -28,7 +28,6 @@ public class JSONEventLayoutV1 extends Layout {
     private String ndc;
     private Map mdc;
     private LocationInfo info;
-    private HashMap<String, Object> exceptionInformation;
     private static Integer version = 1;
 
 
@@ -106,18 +105,8 @@ public class JSONEventLayoutV1 extends Layout {
         logstashEvent.put("message", loggingEvent.getRenderedMessage());
 
         if (loggingEvent.getThrowableInformation() != null) {
-            final ThrowableInformation throwableInformation = loggingEvent.getThrowableInformation();
-            if (throwableInformation.getThrowable().getClass().getCanonicalName() != null) {
-                exceptionInformation.put("exception_class", throwableInformation.getThrowable().getClass().getCanonicalName());
-            }
-            if (throwableInformation.getThrowable().getMessage() != null) {
-                exceptionInformation.put("exception_message", throwableInformation.getThrowable().getMessage());
-            }
-            if (throwableInformation.getThrowableStrRep() != null) {
-                String stackTrace = StringUtils.join(throwableInformation.getThrowableStrRep(), "\n");
-                exceptionInformation.put("stacktrace", stackTrace);
-            }
-            addEventData("exception", exceptionInformation);
+            Throwable T = loggingEvent.getThrowableInformation().getThrowable();
+            addEventData("exception", walkThrowable(T));
         }
 
         if (locationInfo) {
@@ -135,6 +124,27 @@ public class JSONEventLayoutV1 extends Layout {
         addEventData("thread_name", threadName);
 
         return logstashEvent.toString() + "\n";
+    }
+    
+    private HashMap<String, Object> walkThrowable(Throwable T) {
+        HashMap<String, Object> exceptionInforamtion = new HashMap<String, Object>();
+        if (T.getClass().getCanonicalName() != null) {
+            exceptionInformation.put("exception_class", T.getClass().getCanonicalName());
+        }
+        if (T.getMessage() != null) {
+            exceptionInformation.put("exception_message",T.getMessage());
+        }
+        if (T.getStackTrace() != null) {
+            exceptionInformation.put("stacktrace", T.getStackTrace());
+        }
+        if (T.getSuppressed() != null) {
+            ArrayList<HashMap<String, Object>> suppressed = new ArrayList<HashMap<String, Object>>();
+            for (Throwable S: T.getSuppressed()) {
+                suppressed.add(walkThrowable(S));
+            }
+            exceptionInformation.put("suppressed", suppressed);
+        }
+        return exceptionInforamtion;
     }
 
     public boolean ignoresThrowable() {
