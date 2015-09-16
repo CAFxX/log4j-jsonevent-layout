@@ -134,10 +134,10 @@ public class JSONEventLayoutV1 extends Layout {
         if (T.getMessage() != null) {
             exceptionInformation.put("exception_message",T.getMessage());
         }
-        if (T.getStackTrace() != null) {
+        if (T.getStackTrace().length > 0) {
             exceptionInformation.put("stacktrace", T.getStackTrace());
         }
-        if (T.getSuppressed() != null) {
+        if (T.getSuppressed().length > 0) {
             ArrayList<HashMap<String, Object>> suppressed = new ArrayList<HashMap<String, Object>>();
             for (Throwable S: T.getSuppressed()) {
                 suppressed.add(walkThrowable(S));
